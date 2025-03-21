@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /src
+cd /mygpu
 source sample/bin/activate
 echo "=== cpu time ==="
 time python3 compute-cpu.py

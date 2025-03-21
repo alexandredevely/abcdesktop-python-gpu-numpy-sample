@@ -10,7 +10,7 @@ LABEL oc.icondata="PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvb
 LABEL oc.keyword="terminal,konsole,terminal,bash,shell,cmd,admin,ftp,telnet,netcat,sshfs,curl,wget,git,ssh"
 LABEL oc.cat="development"
 LABEL oc.desktopfile="org.kde.konsole.desktop"
-LABEL oc.launch="konsole.konsole"
+LABEL oc.launch="mygpu.konsole"
 LABEL oc.template="ghcr.io/abcdesktopio/oc.template.ubuntu.24.04"
 LABEL oc.name="gpu-numpy-sample"
 LABEL oc.displayname="GPU Numpy Sample"
@@ -19,14 +19,13 @@ LABEL oc.type=app
 LABEL oc.showinview="dock"
 LABEL oc.rules="{\"homedir\":{\"default\":true}}"
 LABEL oc.acl="{\"permit\":[\"all\"]}"
-ENV APPNAME "gpu-numpy-sample"
-ENV APPBIN "/usr/bin/konsole"
-# ENV APP is deprecated, removed in next release
-ENV APP "/usr/bin/konsole"
+LABEL oc.args="--name mygpu"
+
 ENV SHELL=/bin/bash
 RUN echo "ALL ALL=(ALL:ALL) ALL">/etc/sudoers.d/all
 #
 
+SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get install -y \
 	python3-pip \
 	virtualenv \
@@ -35,20 +34,14 @@ RUN apt-get update && apt-get install -y \
 	libnvrtc12 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
-
-RUN mkdir -p /src && chmod 777 /src
-SHELL ["/bin/bash", "-c"]
-RUN cd /src && \
+RUN mkdir -p /mygpu && chmod 777 /mygpu
+RUN cd /mygpu && \
     virtualenv sample && \
     source sample/bin/activate && \
     pip3 install cupy-cuda12x && \
     pip3 install torch
+COPY compute-cpu.py compute-gpu.py run.sh /mygpu/
 
-RUN mkdir -p /src && chmod 777 /src
-COPY run.sh /
-# Run next commands as root
-USER root
 # Permit to create file in directory /var/lib/dbus/
 RUN if [ -x /usr/bin/dbus-launch ]; then chmod g+r,g+w,o+r,o+w /var/lib/dbus ; fi
 # Create links for local acccounts
@@ -58,5 +51,4 @@ RUN if [ -x /usr/bin/dbus-launch ]; then chmod g+r,g+w,o+r,o+w /var/lib/dbus ; f
 # /etc/gshadow -> /etc/localaccount/gshadow
 RUN mkdir -p /etc/localaccount
 RUN for f in passwd shadow group gshadow ; do if [ -f /etc/$f ] ; then  cp /etc/$f /etc/localaccount; rm -f /etc/$f; ln -s /etc/localaccount/$f /etc/$f; fi; done
-USER balloon
 CMD [ "/composer/appli-docker-entrypoint.sh" ]
